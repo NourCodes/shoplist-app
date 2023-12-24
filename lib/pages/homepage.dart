@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:shoplist/widgets/grocery_list.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -10,6 +11,7 @@ class HomePage extends StatelessWidget {
       appBar: AppBar(
         title: const Text("Groceries"),
       ),
+      body: const GroceryList(),
     );
   }
 }
