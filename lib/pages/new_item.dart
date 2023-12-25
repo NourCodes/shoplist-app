@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:shoplist/data/categories_db.dart';
 import 'package:shoplist/models/category_model.dart';
