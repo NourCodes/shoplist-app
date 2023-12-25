@@ -1,11 +1,11 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shoplist/data/categories_db.dart';
 import 'package:shoplist/models/category_model.dart';
+import 'package:shoplist/models/item_model.dart';
 
 class NewItem extends StatefulWidget {
-  const NewItem({Key? key}) : super(key: key);
+  const NewItem({super.key});
 
   @override
   State<NewItem> createState() => _NewItemState();
@@ -19,6 +19,13 @@ class _NewItemState extends State<NewItem> {
   void saveItem() {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
+      Navigator.of(context).pop(
+        Items(
+            name: name,
+            category: selectedCategory,
+            id: DateTime.now().toString(),
+            quantity: quantity),
+      );
     }
   }
 
