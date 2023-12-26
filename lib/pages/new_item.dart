@@ -1,7 +1,8 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shoplist/data/categories_db.dart';
 import 'package:shoplist/models/category_model.dart';
-import 'package:shoplist/models/item_model.dart';
+import 'package:http/http.dart' as http;
 
 class NewItem extends StatefulWidget {
   const NewItem({super.key});
@@ -15,16 +16,31 @@ class _NewItemState extends State<NewItem> {
   var name = '';
   var quantity = 1;
   var selectedCategory = categories[AllCategories.fruit]!;
-  void saveItem() {
+  void saveItem() async {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
-      Navigator.of(context).pop(
-        Items(
-            name: name,
-            category: selectedCategory,
-            id: DateTime.now().toString(),
-            quantity: quantity),
+      final url = Uri.https(
+        'fluttershoplist-46e37-default-rtdb.firebaseio.com',
+        'shop-list.json',
       );
+      //push data
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': "application/json",
+        },
+        body: json.encode(
+          {
+            "name": name,
+            "Quantity": quantity,
+            "Category": selectedCategory.title,
+          },
+        ),
+      );
+      if (!context.mounted) {
+        return;
+      }
+      Navigator.of(context).pop();
     }
   }
 
