@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:shoplist/data/categories_db.dart';
 import 'package:shoplist/models/category_model.dart';
 import 'package:http/http.dart' as http;
+import 'package:shoplist/models/item_model.dart';
 
 class NewItem extends StatefulWidget {
   const NewItem({super.key});
@@ -12,6 +13,7 @@ class NewItem extends StatefulWidget {
 }
 
 class _NewItemState extends State<NewItem> {
+  bool isSending = false;
   final _formKey = GlobalKey<FormState>();
   var name = '';
   var quantity = 1;
@@ -19,6 +21,9 @@ class _NewItemState extends State<NewItem> {
   void saveItem() async {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
+      setState(() {
+        isSending = true;
+      });
       final url = Uri.https(
         'fluttershoplist-46e37-default-rtdb.firebaseio.com',
         'shop-list.json',
@@ -37,10 +42,18 @@ class _NewItemState extends State<NewItem> {
           },
         ),
       );
+      final Map<String, dynamic> responseData = json.decode(response.body);
       if (!context.mounted) {
         return;
       }
-      Navigator.of(context).pop();
+      Navigator.of(context).pop(
+        Items(
+          name: name,
+          category: selectedCategory,
+          id: responseData['name'],
+          quantity: quantity,
+        ),
+      );
     }
   }
 
@@ -139,17 +152,27 @@ class _NewItemState extends State<NewItem> {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   ElevatedButton(
-                    onPressed: () {
-                      _formKey.currentState!.reset();
-                    },
+                    //if it is sending make the button not functional
+                    onPressed: isSending
+                        ? null
+                        : () {
+                            _formKey.currentState!.reset();
+                          },
                     child: const Text("Reset"),
                   ),
                   const SizedBox(
                     width: 10,
                   ),
                   ElevatedButton(
-                    onPressed: saveItem,
-                    child: const Text("Save"),
+                    //if it is sending make the button not functional
+                    onPressed: isSending ? null : saveItem,
+                    child: isSending
+                        ? const SizedBox(
+                            height: 14,
+                            width: 14,
+                            child: CircularProgressIndicator(),
+                          )
+                        : const Text("Save"),
                   ),
                 ],
               )

@@ -14,6 +14,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  bool isLoading = true;
   List<Items> itemsList = [];
   @override
   void initState() {
@@ -51,18 +52,24 @@ class _HomePageState extends State<HomePage> {
     }
     setState(() {
       itemsList = templist;
+      isLoading = false;
     });
   }
 
   void addItem() async {
-    await Navigator.of(context).push<Items>(
+    final newItem = await Navigator.of(context).push<Items>(
       MaterialPageRoute(
         builder: (context) {
           return const NewItem();
         },
       ),
     );
-    loadItems();
+    if (newItem == null) {
+      return;
+    }
+    setState(() {
+      itemsList.add(newItem);
+    });
   }
 
   void removeItem(Items item) {
@@ -98,6 +105,11 @@ class _HomePageState extends State<HomePage> {
                 )));
     if (itemsList.isNotEmpty) {
       screen = GroceryList(allItems: itemsList, onRemove: removeItem);
+    }
+    if (isLoading) {
+      screen = const Center(
+        child: CircularProgressIndicator(),
+      );
     }
     return Scaffold(
       appBar: AppBar(
