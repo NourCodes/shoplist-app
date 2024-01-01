@@ -16,6 +16,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   bool isLoading = true;
   List<Items> itemsList = [];
+  String? error;
   @override
   void initState() {
     loadItems();
@@ -28,8 +29,14 @@ class _HomePageState extends State<HomePage> {
       'fluttershoplist-46e37-default-rtdb.firebaseio.com',
       'shop-list.json',
     );
+
     // fetching data from the URL
     final response = await http.get(url);
+    if (response.statusCode >= 400) {
+      setState(() {
+        error = "Failed to fetch fata. Try Again Later";
+      });
+    }
     // decoding the response body, which is in JSON format, into a map
     final Map<String, dynamic> dataList = json.decode(response.body);
     // create a temporary list to store Items
@@ -72,28 +79,64 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  void removeItem(Items item) {
+  void removeItem(Items item) async {
     final index = itemsList.indexOf(item);
+    Items? deletedItem;
+
+    //before removing the item from the itemsList, store a reference to the deleted item for the undo action
     setState(() {
+      deletedItem = item;
       itemsList.remove(item);
     });
-    ScaffoldMessenger.of(context).clearSnackBars();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        duration: const Duration(
-          seconds: 12,
-        ),
-        content: const Text("Item has been deleted"),
-        action: SnackBarAction(
-          label: "Undo",
-          onPressed: () {
-            setState(() {
-              itemsList.insert(index, item);
-            });
-          },
-        ),
-      ),
+
+    //delete the item from Firebase Realtime Database
+    final url = Uri.https(
+      'fluttershoplist-46e37-default-rtdb.firebaseio.com',
+      'shop-list/${item.id}.json',
     );
+    final response = await http.delete(url);
+
+    if (response.statusCode >= 400) {
+      //if there's an error with the Firebase delete, show a message
+      print("Error: ${response.body}");
+    } else {
+      // if deletion is successful, show a SnackBar with Undo option
+      ScaffoldMessenger.of(context).clearSnackBars();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          duration: const Duration(
+            seconds: 12,
+          ),
+          content: const Text("Item has been deleted"),
+          action: SnackBarAction(
+              label: "Undo",
+              onPressed: () async {
+                //insert the deleted item back into the itemsList
+                if (deletedItem != null) {
+                  setState(() {
+                    itemsList.insert(index, deletedItem!);
+                  });
+
+                  // upload the data back to Firebase
+                  final undoUrl = Uri.https(
+                    'fluttershoplist-46e37-default-rtdb.firebaseio.com',
+                    'shop-list/${deletedItem!.id}.json',
+                  );
+                  await http.put(
+                    undoUrl,
+                    body: json.encode(
+                      {
+                        'name': deletedItem!.name,
+                        'Category': deletedItem!.category.title,
+                        'Quantity': deletedItem!.quantity,
+                      },
+                    ),
+                  );
+                }
+              }),
+        ),
+      );
+    }
   }
 
   @override
@@ -109,6 +152,11 @@ class _HomePageState extends State<HomePage> {
     if (isLoading) {
       screen = const Center(
         child: CircularProgressIndicator(),
+      );
+    }
+    if (error != null) {
+      screen = Center(
+        child: Text(error!, style: Theme.of(context).textTheme.titleMedium),
       );
     }
     return Scaffold(

@@ -18,6 +18,7 @@ class _NewItemState extends State<NewItem> {
   var name = '';
   var quantity = 1;
   var selectedCategory = categories[AllCategories.fruit]!;
+  String? error;
   void saveItem() async {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
