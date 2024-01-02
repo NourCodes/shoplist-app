@@ -14,8 +14,8 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  bool isLoading = true;
   List<Items> itemsList = [];
+  bool isLoading = true;
   String? error;
   @override
   void initState() {
@@ -31,36 +31,48 @@ class _HomePageState extends State<HomePage> {
     );
 
     // fetching data from the URL
-    final response = await http.get(url);
-    if (response.statusCode >= 400) {
-      setState(() {
-        error = "Failed to fetch fata. Try Again Later";
-      });
-    }
-    // decoding the response body, which is in JSON format, into a map
-    final Map<String, dynamic> dataList = json.decode(response.body);
-    // create a temporary list to store Items
-    final List<Items> templist = [];
-    // convert the map entries to Items and add them to the temporary list
-    for (final i in dataList.entries) {
-      // find the matching category based on the category title in the data
-      final tempCategory = categories.entries
-          .firstWhere((element) => element.value.title == i.value['Category'])
-          .value;
+    try {
+      final response = await http.get(url);
+      if (response.statusCode >= 400) {
+        setState(() {
+          error = 'Failed to get data. Try Again Later';
+        });
+      }
+      //if there is no data in firebase
+      if (response.body == "null") {
+        setState(() {
+          isLoading = false;
+        });
+        return;
+      }
+      // decoding the response body, which is in JSON format, into a map
+      final Map<String, dynamic> dataList = json.decode(response.body);
+      // create a temporary list to store Items
+      final List<Items> templist = [];
+      // convert the map entries to Items and add them to the temporary list
+      for (final i in dataList.entries) {
+        // find the matching category based on the category title in the data
+        final tempCategory = categories.entries
+            .firstWhere((element) => element.value.title == i.value['Category'])
+            .value;
 
-      // create Items object and add it to the temporary list
-      templist.add(
-        Items(
-            name: i.value['name'],
-            category: tempCategory,
-            id: i.key,
-            quantity: i.value["Quantity"]),
-      );
+        // create Items object and add it to the temporary list
+        templist.add(
+          Items(
+              name: i.value['name'],
+              category: tempCategory,
+              id: i.key,
+              quantity: i.value["Quantity"]),
+        );
+        setState(() {
+          isLoading = false;
+
+          itemsList = templist;
+        });
+      }
+    } catch (e) {
+      error = 'Failed to get data. Try Again Later';
     }
-    setState(() {
-      itemsList = templist;
-      isLoading = false;
-    });
   }
 
   void addItem() async {
@@ -105,7 +117,7 @@ class _HomePageState extends State<HomePage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           duration: const Duration(
-            seconds: 12,
+            seconds: 7,
           ),
           content: const Text("Item has been deleted"),
           action: SnackBarAction(
@@ -142,10 +154,13 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     Widget screen = Center(
-        child: Text("No items Found",
-            style: Theme.of(context).textTheme.titleLarge!.copyWith(
-                  color: Theme.of(context).colorScheme.onBackground,
-                )));
+      child: Text(
+        "No items Found!",
+        style: Theme.of(context).textTheme.titleLarge!.copyWith(
+              color: Theme.of(context).colorScheme.onBackground,
+            ),
+      ),
+    );
     if (itemsList.isNotEmpty) {
       screen = GroceryList(allItems: itemsList, onRemove: removeItem);
     }
@@ -154,6 +169,7 @@ class _HomePageState extends State<HomePage> {
         child: CircularProgressIndicator(),
       );
     }
+
     if (error != null) {
       screen = Center(
         child: Text(error!, style: Theme.of(context).textTheme.titleMedium),

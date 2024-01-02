@@ -26,9 +26,10 @@ class _NewItemState extends State<NewItem> {
         isSending = true;
       });
       final url = Uri.https(
-        'fluttershoplist-46e37-default-rtdb.firebaseio.com',
+        'fluttershoplist-46e37-default-rtdb.firebaseio',
         'shop-list.json',
       );
+
       //push data
       final response = await http.post(
         url,
@@ -43,6 +44,7 @@ class _NewItemState extends State<NewItem> {
           },
         ),
       );
+
       final Map<String, dynamic> responseData = json.decode(response.body);
       if (!context.mounted) {
         return;
